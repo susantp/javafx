@@ -3,7 +3,9 @@ package com.techbizz.javafx;
 import com.sun.net.httpserver.HttpHandler;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -24,32 +26,50 @@ public class HelloController {
 
     @FXML
     private Label welcomeText;
-
     @FXML
-    private Label requestedOn;
+    private TextField host;
+
+    public void initialize() {
+        welcomeText.setText("Enter the url host");
+        host.setPromptText("e.g. api.ipify.org");
+    }
 
     @FXML
     protected void onHelloButtonClick() {
-        this.getPublicIpAddress()
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        Alert alertE = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Request");
+        alert.setHeaderText("Public IP");
+        alertE.initOwner(welcomeText.getScene().getWindow());
+        alert.initOwner(welcomeText.getScene().getWindow());
+        String host = this.host.getText();
+        if (!this.isValidHost(host)) {
+            alertE.setHeaderText("Invalid Host");
+            alertE.showAndWait();
+            return;
+        }
+        this.getPublicIpAddress(host)
                 .thenAccept(ip -> Platform.runLater(() -> {
-                    requestedOn.setText(this.getCurrentDateTime().concat(" \n Request by IP: ").concat(ip));
+                    alert.setContentText(String.join("\n", "Request: ".concat(ip), "On: ".concat(this.getCurrentDateTime())));
+                    alert.initOwner(welcomeText.getScene().getWindow());
+                    alert.showAndWait();
                 }))
                 .exceptionally(ex -> {
                     Platform.runLater(() -> {
-                        requestedOn.setText(this.getCurrentDateTime() + " IP unavailable");
+                        alertE.setContentText("IP unavailable !!!");
+                        alertE.showAndWait();
                     });
                     return null;
                 });
-        welcomeText.setText("Welcome to JavaFX Application!");
     }
 
     private String getCurrentDateTime() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
     }
 
-    private CompletableFuture<String> getPublicIpAddress() {
+    private CompletableFuture<String> getPublicIpAddress(String host) {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.ipify.org"))
+                .uri(URI.create("https://%s".formatted(host)))
                 .GET()
                 .build();
 
@@ -62,5 +82,17 @@ public class HelloController {
                     }
                     return response.body().trim();
                 });
+    }
+
+    private boolean isValidHost(String host) {
+        if (host == null || host.isBlank()) {
+            return false;
+        }
+
+        String hostnameRegex =
+                "^(?=.{1,253}$)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?" +
+                        "(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
+
+        return host.matches(hostnameRegex);
     }
 }
