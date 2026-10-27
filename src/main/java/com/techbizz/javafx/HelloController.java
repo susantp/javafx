@@ -34,6 +34,9 @@ public class HelloController {
     @FXML
     private Label helperText;
 
+    private final Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    private final Alert alertE = new Alert(Alert.AlertType.ERROR);
+
     public void initialize() {
         welcomeText.setText("Enter the url host");
         helperText.setText("e.g. api.ipify.org");
@@ -45,31 +48,31 @@ public class HelloController {
 
     @FXML
     protected void onHelloButtonClick() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        Alert alertE = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Request");
-        alert.setHeaderText("Public IP");
-        alertE.initOwner(welcomeText.getScene().getWindow());
-        alert.initOwner(welcomeText.getScene().getWindow());
-        String host = this.host.getText();
-        if (!this.isValidHost(host)) {
-            alertE.setHeaderText("Invalid Host");
+        String hostname = this.host.getText();
+        if (!this.isValidHost(hostname)) {
             alertE.showAndWait();
             return;
         }
-        this.getPublicIpAddress(host)
-                .thenAccept(ip -> Platform.runLater(() -> {
-                    alert.setContentText(String.join("\n", "Request: ".concat(ip), "On: ".concat(this.getCurrentDateTime())));
-                    alert.initOwner(welcomeText.getScene().getWindow());
-                    alert.showAndWait();
-                }))
-                .exceptionally(ex -> {
-                    Platform.runLater(() -> {
-                        alertE.setContentText("IP unavailable !!!");
-                        alertE.showAndWait();
-                    });
-                    return null;
-                });
+        getPublicIpAddress(hostname)
+                .whenComplete((ip, ex) -> Platform.runLater(() -> {
+
+                    if (ex != null) {
+                        showAlert(
+                                Alert.AlertType.ERROR,
+                                "Request Failed",
+                                "Unable to connect to: " + hostname
+                                        + "\nReason: " + ex.getMessage()
+                        );
+                        return;
+                    }
+
+                    showAlert(
+                            Alert.AlertType.INFORMATION,
+                            "Public IP",
+                            "Response: " + ip
+                                    + "\nOn: " + getCurrentDateTime()
+                    );
+                }));
     }
 
     private String getCurrentDateTime() {
@@ -103,5 +106,20 @@ public class HelloController {
                         "(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
 
         return host.matches(hostnameRegex);
+    }
+
+    private void showAlert(
+            Alert.AlertType type,
+            String title,
+            String message
+    ) {
+        Alert dialog = new Alert(type);
+
+        dialog.setTitle("HTTP Request");
+        dialog.setHeaderText(title);
+        dialog.setContentText(message);
+        dialog.initOwner(welcomeText.getScene().getWindow());
+
+        dialog.showAndWait();
     }
 }
