@@ -14,5 +14,6 @@
 
     <Label fx:id="welcomeText"/>
     <TextField fx:id="host" />
-    <Button text="Hello!" onAction="#onHelloButtonClick"/>
+    <Label fx:id="helperText" />
+    <Button fx:id="requestButton" text="Hello!" onAction="#onHelloButtonClick"/>
 </VBox>

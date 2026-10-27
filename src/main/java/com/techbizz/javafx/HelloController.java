@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpHandler;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
@@ -28,10 +29,18 @@ public class HelloController {
     private Label welcomeText;
     @FXML
     private TextField host;
+    @FXML
+    private Button requestButton;
+    @FXML
+    private Label helperText;
 
     public void initialize() {
         welcomeText.setText("Enter the url host");
-        host.setPromptText("e.g. api.ipify.org");
+        helperText.setText("e.g. api.ipify.org");
+        helperText.setStyle("-fx-text-fill: grey; -fx-font-size: 10px;");
+        requestButton.disableProperty().bind(
+                host.textProperty().isEmpty()
+        );
     }
 
     @FXML
