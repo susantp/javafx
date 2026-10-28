@@ -1,90 +1,58 @@
 # JavaFX — macOS Build & Installation Guide
 
-This guide explains how to compile, package, and install the JavaFX application on macOS using Maven, `jpackage`, and `jlink`.
+This guide describes how to build, package, and install the JavaFX application on macOS using Maven and the JDK packaging tools.
+
+The build process generates a native macOS `.app` bundle and a distributable `.dmg` installer.
 
 ## 1. Prerequisites
 
-- macOS (Apple Silicon or Intel)
-- JDK 21 or later, compatible with the project
-- Maven Wrapper (`./mvnw`)
-- JavaFX and application dependencies configured in `pom.xml`
+Ensure the following tools are installed:
 
-Verify Java:
+- macOS (Apple Silicon or Intel)
+- JDK 21 or later
+- Maven Wrapper (`./mvnw`)
+- JavaFX dependencies configured in `pom.xml`
+
+Verify the environment:
 
 ```bash
 java -version
-```
-
-Verify Maven:
-
-```bash
 ./mvnw -version
-```
-
-Verify `jpackage`:
-
-```bash
+jlink --version
 jpackage --version
 ```
 
-Ensure `java`, `jlink`, and `jpackage` are available from a compatible JDK installation.
+## 2. Build the Application
 
-## 2. Configure Maven Dependencies
-
-To automatically copy runtime dependencies during the Maven build, add the following plugin inside `<build><plugins>` in `pom.xml`.
-
-```xml
-<plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-dependency-plugin</artifactId>
-    <version>3.8.1</version>
-    <executions>
-        <execution>
-            <id>copy-runtime-dependencies</id>
-            <phase>package</phase>
-            <goals>
-                <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-                <includeScope>runtime</includeScope>
-                <outputDirectory>${project.build.directory}/dependency</outputDirectory>
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
-```
-
-This configuration copies required dependency JARs into `target/dependency` during `mvn package`.
-
-## 3. Clean and Build
-
-From the project's root directory:
+From the project root, run:
 
 ```bash
-./mvnw clean package
+./mvnw clean package dependency:copy-dependencies \
+  -DincludeScope=runtime \
+  -DoutputDirectory=target/dependency
 ```
 
-Expected result:
+This compiles the application, runs tests, generates the application JAR, and copies runtime dependencies.
+
+Expected output:
 
 ```text
 [INFO] BUILD SUCCESS
 ```
 
-The build generates:
+Build artifacts are generated under:
 
 ```text
 target/
 ├── classes/
 ├── dependency/
-│   ├── formsfx-core-*.jar
-│   ├── javafx-controls-*.jar
-│   └── ...
+│   └── *.jar
 └── javafx-1.0-SNAPSHOT.jar
 ```
 
-## 4. Generate macOS Application Image
+## 3. Create the macOS Application
 
-Use `jpackage` to create a native macOS `.app` bundle.
+Generate the native `.app` bundle:
 
 ```bash
 jpackage \
@@ -96,33 +64,31 @@ jpackage \
   --dest target/image
 ```
 
-Expected output:
+Generated application:
 
 ```text
 target/image/MyJavaFXApp.app
 ```
 
-The generated application image includes a Java runtime built by `jlink`, provided all required modules can be resolved and linked.
+The application bundle includes its own Java runtime and required application modules.
 
-**Note:** All modules must be compatible with `jlink`. Automatic modules or unsupported native dependencies may require an alternative packaging configuration.
+**Note:** This command requires dependencies to be compatible with the Java module system and runtime linking.
 
-## 5. Test the Application
+## 4. Test the Application
 
-Launch the generated macOS application:
+Launch the generated application:
 
 ```bash
 open target/image/MyJavaFXApp.app
 ```
 
-Verify that the JavaFX window opens and the application works correctly.
+Verify that the application starts and operates correctly before creating the installer.
 
-## 6. Generate the DMG Installer
+## 5. Create the DMG Installer
 
-Create the macOS disk image installer:
+Package the application into a macOS disk image:
 
 ```bash
-mkdir -p target/installer
-
 jpackage \
   --type dmg \
   --name "MyJavaFXApp" \
@@ -130,40 +96,42 @@ jpackage \
   --dest target/installer
 ```
 
-Expected output:
+Generated installer:
 
 ```text
 target/installer/MyJavaFXApp-1.0.0.dmg
 ```
 
-The exact filename may vary depending on packaging options and JDK version.
+The exact installer filename depends on the packaging configuration.
 
-## 7. Open and Install
+## 6. Install the Application
 
-Open the generated installer:
+Open the DMG:
 
 ```bash
 open target/installer/*.dmg
 ```
 
-Then:
+Installation steps:
 
 1. Open the mounted disk image.
-2. Drag `MyJavaFXApp.app` into Applications, if the installer provides that layout.
-3. Open Applications.
+2. Copy `MyJavaFXApp.app` into the Applications folder.
+3. Open Applications in Finder.
 4. Launch `MyJavaFXApp`.
 
-The packaged application should use its bundled Java runtime rather than requiring a separate system Java installation.
+The application runs using its bundled Java runtime. A separate JDK installation is not required on the target machine.
 
-## 8. Complete Build Commands
+## 7. Complete Build Commands
 
-Run these commands in sequence from the project root.
+Run the following commands from the project root:
 
 ```bash
-# Clean and package the Maven project
-./mvnw clean package
+# Build application and dependencies
+./mvnw clean package dependency:copy-dependencies \
+  -DincludeScope=runtime \
+  -DoutputDirectory=target/dependency
 
-# Create the macOS application image
+# Generate macOS application bundle
 jpackage \
   --type app-image \
   --app-version 1.0.0 \
@@ -172,23 +140,21 @@ jpackage \
   --module com.techbizz.javafx/com.techbizz.javafx.HelloApplication \
   --dest target/image
 
-# Test the macOS application
+# Launch application
 open target/image/MyJavaFXApp.app
 
-# Create the DMG installer
-mkdir -p target/installer
-
+# Generate DMG installer
 jpackage \
   --type dmg \
   --name "MyJavaFXApp" \
   --app-image target/image/MyJavaFXApp.app \
   --dest target/installer
 
-# Open the installer
+# Open installer
 open target/installer/*.dmg
 ```
 
-## 9. Final Project Structure
+## 8. Build Output Structure
 
 ```text
 javafx/
@@ -202,6 +168,7 @@ javafx/
 └── target/
     ├── classes/
     ├── dependency/
+    │   └── *.jar
     ├── javafx-1.0-SNAPSHOT.jar
     ├── image/
     │   └── MyJavaFXApp.app
@@ -209,35 +176,37 @@ javafx/
         └── MyJavaFXApp-1.0.0.dmg
 ```
 
-## 10. Troubleshooting
+## 9. Troubleshooting
 
-### Invalid application version
+### Invalid Application Version
 
-Error:
+**Error:**
 
 ```text
 Version [1.0-SNAPSHOT] contains invalid component
 ```
 
-Solution:
-
-Specify a numeric application version:
+Use a numeric application version:
 
 ```bash
 --app-version 1.0.0
 ```
 
-### JavaFX or FormsFX module not found
+### Module Not Found
 
-Error:
+**Example:**
 
 ```text
 Module com.dlsc.formsfx not found
 ```
 
-Solution:
+Verify that dependencies exist:
 
-Ensure the runtime dependencies are copied:
+```bash
+ls target/dependency
+```
+
+Copy runtime dependencies again if required:
 
 ```bash
 ./mvnw dependency:copy-dependencies \
@@ -245,61 +214,71 @@ Ensure the runtime dependencies are copied:
   -DoutputDirectory=target/dependency
 ```
 
-Use the complete module path:
+Verify the module path:
 
 ```bash
 --module-path "target/classes:target/dependency"
 ```
 
-If the dependency is still missing, inspect the Maven dependency configuration and `module-info.java`.
+### Automatic Module Errors
 
-### Application image already exists
+Runtime linking may fail when third-party dependencies are not compatible with `jlink`.
 
-If `jpackage` refuses to overwrite the existing application image:
+Use compatible modular dependencies or generate a custom runtime image and package the application using `jpackage` with the appropriate runtime and application classpath.
+
+### Application Image Already Exists
+
+Remove the existing application image:
 
 ```bash
 rm -rf target/image
 ```
 
-Then rerun the application image packaging command.
+Run the application packaging command again.
 
-### Automatic modules cannot be linked
+### macOS Security Warnings
 
-If `jlink` reports an error about automatic modules, copying the JARs is not sufficient. Identify the incompatible module and use a supported modular version or an alternative packaging strategy with a separately generated runtime image.
+macOS may block unsigned applications through Gatekeeper.
 
-### macOS security warning
+For local builds, follow the macOS security prompts to authorize trusted applications.
 
-Unsigned or unnotarized applications may be blocked by macOS Gatekeeper.
+For public distribution, sign the application using an Apple Developer ID certificate and notarize the distributable package.
 
-For local development, review the warning and use the macOS security controls to approve the application if you trust the build.
+### Apple Silicon and Intel Compatibility
 
-For public distribution, use Apple Developer ID signing and Apple notarization.
+Create separate builds for each macOS architecture:
 
-### Apple Silicon and Intel compatibility
+- **Apple Silicon:** ARM64 (aarch64)
+- **Intel:** x86_64
 
-An application image produced on Apple Silicon generally targets ARM64. An image produced on Intel generally targets x86_64.
+Build and verify the application on the corresponding target architecture.
 
-Build separate installers for both architectures unless you have specifically configured and tested a compatible universal distribution.
+## 10. Distribution
 
-## 11. Distribution
-
-Share the generated file:
+Distribute the generated installer:
 
 ```text
 target/installer/MyJavaFXApp-1.0.0.dmg
 ```
 
-Users can install the application by opening the DMG and copying the application into their Applications folder.
+Users can install the application by opening the DMG and copying the `.app` bundle into Applications.
 
-For distribution outside a local development environment, sign and notarize the application and installer according to Apple's requirements.
+## 11. README Integration
+
+Add the installation guide to `README.md`:
+
+```markdown
+## Installation
+
+- [macOS Installation Guide](./INSTALL_MAC.md)
+```
 
 ---
 
-**Project:** JavaFX  
+**Application:** MyJavaFXApp  
 **Main module:** `com.techbizz.javafx`  
 **Main class:** `com.techbizz.javafx.HelloApplication`  
-**Application name:** `MyJavaFXApp`  
-**Application version:** `1.0.0`  
+**Version:** `1.0.0`  
 **Build tool:** Maven  
-**Packaging tools:** `jlink`, `jpackage`  
-**Target platform:** macOS
+**Packaging tools:** jlink, jpackage  
+**Platform:** macOS
