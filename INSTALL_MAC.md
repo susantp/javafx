@@ -263,16 +263,6 @@ target/installer/MyJavaFXApp-1.0.0.dmg
 
 Users can install the application by opening the DMG and copying the `.app` bundle into Applications.
 
-## 11. README Integration
-
-Add the installation guide to `README.md`:
-
-```markdown
-## Installation
-
-- [macOS Installation Guide](INSTALL_MAC.md)
-```
-
 ---
 
 **Application:** MyJavaFXApp  
