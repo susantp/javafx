@@ -270,7 +270,7 @@ Add the installation guide to `README.md`:
 ```markdown
 ## Installation
 
-- [macOS Installation Guide](./INSTALL_MAC.md)
+- [macOS Installation Guide](INSTALL_MAC.md)
 ```
 
 ---
