@@ -1,24 +1,23 @@
 package com.techbizz.javafx;
 
-import com.sun.net.httpserver.HttpHandler;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -34,6 +33,9 @@ public class HelloController {
     @FXML
     private Label helperText;
 
+    @FXML
+    private Hyperlink gotAgeScene;
+
     private final Alert alert = new Alert(Alert.AlertType.INFORMATION);
     private final Alert alertE = new Alert(Alert.AlertType.ERROR);
 
@@ -44,6 +46,17 @@ public class HelloController {
         requestButton.disableProperty().bind(
                 host.textProperty().isEmpty()
         );
+    }
+
+    @FXML
+    protected void handleGotAgeScene(ActionEvent event) throws IOException {
+        Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("age-view.fxml")));
+        Scene scene = gotAgeScene.getScene();
+        scene.setRoot(root);
+        Stage stage = (Stage) scene.getWindow();
+        stage.setTitle("Get your age");
+        stage.sizeToScene();
+        stage.centerOnScreen();
     }
 
     @FXML
